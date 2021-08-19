@@ -89,8 +89,8 @@ public class HealthUserInfo implements Serializable {
     @Field
     private String medical_insurance;
 
-    @Field
-    private String birthday;
+//    @Field
+//    private String birthday;
 
     @Field
     private String present_address;
