@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miao.cloud.mapper.HealthUserAbnormalIndicatorMapper">
+
+    <select id="getListById" resultType="com.miao.cloud.bean.HealthUserAbnormalIndicator">
+        select
+               *
+        from
+            health_user_abnormal_indicator
+        where
+                id  &gt; #{id} and source_port order by id desc  limit 500
+
+    </select>
+
+
+</mapper>

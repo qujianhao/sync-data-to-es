@@ -5,9 +5,13 @@ import com.baomidou.mybatisplus.core.toolkit.BeanUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.miao.cloud.bean.HealthDocRecord;
 //import com.miao.cloud.es.EsHealthDocRecordDao;
+import com.miao.cloud.bean.HealthUserAbnormalIndicator;
 import com.miao.cloud.bean.HealthUserInfo;
+import com.miao.cloud.bean.HealthUserPhoneNumberAbnormalIndicator;
 import com.miao.cloud.service.HealthDoRecordService;
+import com.miao.cloud.service.HealthUserAbnormalIndicatorService;
 import com.miao.cloud.service.HealthUserInfoService;
+import com.miao.cloud.service.HealthUserPhoneNumberAbnormalIndicatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -43,6 +47,12 @@ public class SyncHealthDataToEsApplicationTests {
 
     @Resource
     private RestHighLevelClient restHighLevelClient;
+
+    @Resource
+    private HealthUserAbnormalIndicatorService healthUserAbnormalIndicatorService;
+
+    @Resource
+    private HealthUserPhoneNumberAbnormalIndicatorService healthUserPhoneNumberAbnormalIndicatorService;
 
     @Test
     public void contextLoads() {
@@ -111,5 +121,59 @@ public class SyncHealthDataToEsApplicationTests {
     }
 
 
+
+    @Test
+    public void insertHealthUserAbnormalIndicator(){
+        Long start = 24761448L;
+        String index = "index_health_user_abnormal_indicator";
+        String  type = "health_user_abnormal_indicator";
+        while (true){
+            List<HealthUserAbnormalIndicator> listById = healthUserAbnormalIndicatorService.getListById(start);
+            if (listById.size()<1){
+                return;
+            }
+            bulkInsert(index,type,listById);
+        }
+    }
+
+    @Test
+    public void insertHealthUserPhoneNumberAbnormalIndicator(){
+        Long start = 10782590L;
+        String index = "index_health_user_phone_number_abnormal_indicator";
+        String  type = "health_user_phone_number_abnormal_indicator";
+        while (true){
+            List<HealthUserPhoneNumberAbnormalIndicator> listById = healthUserPhoneNumberAbnormalIndicatorService.getListById(start);
+            if (listById.size()<1){
+                return;
+            }
+            bulkInsert(index,type,listById);
+        }
+    }
+
+    private void bulkInsert(String indexName,String typeName,Object list){
+        List<Object> objectList = (List<Object>) list;
+        BulkRequest bulkRequest = new BulkRequest();
+        objectList.stream().forEach(object -> {
+            Map<String, Object> paramMap = BeanUtils.beanToMap(object);
+            bulkRequest.add(new IndexRequest(indexName,typeName).source(paramMap));
+        });
+
+        try {
+            BulkResponse bulk = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            int size = 0;
+            if (bulk.hasFailures()){
+                size = Arrays.stream(bulk.getItems()).filter(bulkItemResponse -> {
+                    if (StringUtils.isNotEmpty(bulkItemResponse.getFailureMessage())) {
+                        return Boolean.TRUE;
+                    }
+                    return Boolean.FALSE;
+                }).collect(Collectors.toList()).size();
+            }
+            log.info("本次同步共成功了{}条。",objectList.size()-size);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
